@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>PDF Checklist Generator</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background:#f6f8fa; display:flex; justify-content:center; align-items:center; height:100vh; }
+    .card { background:#fff; padding:32px 40px; border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.12); width:320px; }
+    h2 { margin-top:0; }
+    label { display:block; margin:16px 0 4px; font-weight:600; }
+    input[type=date] { width:100%; padding:8px; font-size:15px; }
+    button { margin-top:24px; width:100%; padding:10px; font-size:16px; cursor:pointer; }
+    .note { font-size:13px; color:#555; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>PDF Checklist</h2>
+    <label>From
+      <input id="from" type="date">
+    </label>
+    <label>To
+      <input id="to" type="date">
+    </label>
+    <button onclick="generate()">Generate PDF</button>
+    <div class="note">No server required—runs entirely in your browser.</div>
+  </div>
+
+  <!-- jsPDF + autoTable CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <script>
+    // --- 1. tiny fake task list (replace or extend here) ---
+    const tasks = [
+      {title:"Send invoice",      due:"2025-11-10", notes:"ABC Corp"},
+      {title:"Code review",       due:"2025-11-11", notes:"PR #42"},
+      {title:"Book flight",       due:"2025-11-12", notes:"NY→SF"},
+      {title:"Submit taxes",      due:"2025-11-13", notes:""},
+      {title:"Team stand-up",     due:"2025-11-14", notes:"10 am"},
+      {title:"Update portfolio",  due:"2025-11-15", notes:"Dribbble shots"},
+      {title:"Buy groceries",     due:"2025-11-16", notes:"Milk, eggs"},
+    ];
+
+    // --- 2. PDF generator ---
+    function generate(){
+      const from = document.getElementById('from').value;
+      const to   = document.getElementById('to').value;
+      if(!from || !to){ alert("Pick both dates"); return; }
+
+      // filter tasks in range (inclusive)
+      const filtered = tasks.filter(t => t.due >= from && t.due <= to);
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({orientation:'p', unit:'pt', format:'a4'});
+      doc.setFontSize(18);
+      doc.text(`Checklist  ${from}  →  ${to}`, 40, 50);
+
+      const head = [['☐ Task', 'Due Date', 'Notes']];
+      const body = filtered.map(t => [t.title, t.due, t.notes]);
+
+      doc.autoTable({
+        head,
+        body,
+        startY: 80,
+        theme: 'grid',
+        styles:{fontSize:11},
+        headStyles:{fillColor:[66,139,202]}
+      });
+
+      doc.save(`Checklist_${from}_to_${to}.pdf`);
+    }
+  </script>
+</body>
+</html>

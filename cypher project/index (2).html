@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>Cypher Craft: An Encryption Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Space Mono', monospace; background: #1a1a2e; color: #e0e0e0; }
+        .font-pixel { font-family: 'Press Start 2P', cursive; }
+        .card { 
+            background-color: #162447; 
+            border: 2px solid #1f4068; 
+            box-shadow: 0 0 15px rgba(227, 201, 74, 0.3); 
+            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            background-size: 15px 15px;
+        }
+        .btn { transition: all 0.3s ease; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-primary { background: linear-gradient(45deg, #e43a15, #e65245); box-shadow: 0 0 10px rgba(228, 58, 21, 0.5); }
+        .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 0 20px rgba(228, 58, 21, 0.8); }
+        .btn-secondary { background-color: #1f4068; border: 1px solid #4a6fa5; }
+        .btn-secondary:hover:not(:disabled) { background-color: #3b6b9e; }
+        .letter-box { width: 50px; height: 60px; border: 2px solid #1f4068; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; font-weight: bold; transition: all 0.5s ease; transform-style: preserve-3d; position: relative; }
+        .letter-box.active { border-color: #e7c94a; transform: scale(1.1); }
+        .letter-box.transformed { transform: rotateY(180deg); }
+        .letter-box .front, .letter-box .back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; }
+        .letter-box .back { transform: rotateY(180deg); color: #82e0aa; }
+        .explanation-box { background-color: rgba(0,0,0,0.3); border-left: 4px solid #e7c94a; min-height: 150px; display: flex; align-items: center; justify-content: center; }
+        input, select, textarea { background-color: #10101a; border: 2px solid #1f4068; }
+        textarea { color: black; font-weight: bold; }
+        input:focus, select:focus, textarea:focus { 
+            border-color: #e7c94a; 
+            outline: none; 
+            box-shadow: 0 0 15px rgba(231, 201, 74, 0.5);
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+        .settings-panel { transition: opacity 0.5s, max-height 0.5s ease-in-out; max-height: 0; opacity: 0; overflow: hidden; }
+        .settings-panel.active { max-height: 500px; opacity: 1; }
+        /* Grid Styles */
+        .grid-visual { display: grid; gap: 5px; }
+        .grid-cell { width: 40px; height: 40px; display: flex; justify-content: center; align-items: center; border: 1px solid #4a5568; transition: all 0.3s; }
+        .grid-cell.highlight-a { background-color: #d69e2e; color: #1a202c; }
+        .grid-cell.highlight-b { background-color: #38b2ac; color: #1a202c; }
+        .grid-cell.header { background-color: #2c5282; font-weight: bold; }
+        .exp-level { margin-bottom: 0.75rem; }
+        .exp-level strong { color: #f6e05e; }
+
+        @keyframes pulse-glow {
+            0% { box-shadow: 0 0 5px rgba(231, 201, 74, 0.2); }
+            50% { box-shadow: 0 0 20px rgba(231, 201, 74, 0.6); }
+            100% { box-shadow: 0 0 5px rgba(231, 201, 74, 0.2); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <main class="w-full max-w-5xl mx-auto">
+        <div class="card rounded-2xl p-6 md:p-8">
+            <header class="text-center mb-6 relative">
+                <h1 class="font-pixel text-2xl md:text-4xl text-yellow-300 tracking-wider">Cypher Craft</h1>
+                <p class="text-sm md:text-base mt-2 text-gray-400">The Animated Encryption Playground</p>
+                <div class="absolute top-0 right-0 bg-yellow-300 text-gray-900 font-bold text-xs py-1 px-3 rounded-full font-pixel">
+                    Rank: Rookie
+                </div>
+            </header>
+
+            <div id="settings-area">
+                <!-- Settings -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label for="category" class="block mb-2 font-bold text-yellow-300">1. Select Cipher Class</label>
+                        <select id="category" class="w-full p-3 rounded-lg">
+                            <option value="substitution">Substitution Ciphers</option>
+                            <option value="transposition">Transposition Ciphers</option>
+                            <option value="gridblock">Classic Grid & Block Ciphers</option>
+                            <option value="symmetric">Symmetric Encryption</option>
+                            <option value="asymmetric">Asymmetric Encryption</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="algorithm" class="block mb-2 font-bold text-yellow-300">2. Choose Encryption Protocol</label>
+                        <select id="algorithm" class="w-full p-3 rounded-lg"></select>
+                    </div>
+                </div>
+
+                <!-- Algorithm Specific Settings -->
+                <div id="settings-container" class="mb-6">
+                    <div id="caesar-settings" class="settings-panel"><label for="caesar-shift" class="block mb-2 font-bold text-yellow-300">Shift Value: <span id="shift-value" class="text-white">3</span></label><input type="range" id="caesar-shift" min="1" max="25" value="3" class="w-full"></div>
+                    <div id="vigenere-settings" class="settings-panel"><label for="vigenere-key" class="block mb-2 font-bold text-yellow-300">Keyword:</label><input type="text" id="vigenere-key" placeholder="e.g., LEMON" class="w-full p-2 rounded-lg"></div>
+                    <div id="railfence-settings" class="settings-panel"><label for="railfence-rails" class="block mb-2 font-bold text-yellow-300">Rails: <span id="rails-value" class="text-white">3</span></label><input type="range" id="railfence-rails" min="2" max="10" value="3" class="w-full"></div>
+                    <div id="playfair-settings" class="settings-panel"><label for="playfair-key" class="block mb-2 font-bold text-yellow-300">Keyword:</label><input type="text" id="playfair-key" placeholder="e.g., MONARCHY" class="w-full p-2 rounded-lg"></div>
+                    <div id="columnar-settings" class="settings-panel"><label for="columnar-key" class="block mb-2 font-bold text-yellow-300">Keyword:</label><input type="text" id="columnar-key" placeholder="e.g., SECRET" class="w-full p-2 rounded-lg"></div>
+                    <div id="simpleblock-settings" class="settings-panel"><label for="simpleblock-key" class="block mb-2 font-bold text-yellow-300">Keyword (4 letters):</label><input type="text" id="simpleblock-key" maxlength="4" placeholder="e.g., LOCK" class="w-full p-2 rounded-lg"></div>
+                    <div id="xor-settings" class="settings-panel"><label for="xor-key" class="block mb-2 font-bold text-yellow-300">Key (Single Character):</label><input type="text" id="xor-key" maxlength="1" placeholder="e.g., K" class="w-full p-2 rounded-lg"></div>
+                    <div id="rsa-settings" class="settings-panel text-center"><p>Simplified RSA uses pre-set small prime numbers for demonstration.</p><p class="mt-2">Public Key (e, n): <span id="rsa-public-key" class="font-bold text-green-400"></span></p></div>
+                </div>
+                
+                <!-- Input -->
+                <div><label for="plain-text" class="block mb-2 font-bold text-yellow-300">3. Compose Top-Secret Communiqué</label><textarea id="plain-text" rows="3" class="w-full p-3 rounded-lg resize-none" placeholder="Your message here, Agent..."></textarea></div>
+
+                <!-- Encrypt Button -->
+                <div class="text-center my-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     <button id="auto-encrypt-btn" class="btn btn-primary font-pixel text-white py-3 px-6 rounded-lg text-base">Encrypt & Transmit</button>
+                     <button id="step-encrypt-btn" class="btn btn-secondary font-pixel text-white py-3 px-6 rounded-lg text-base">Manual Override</button>
+                </div>
+            </div>
+
+            <!-- Animation Area -->
+            <div id="animation-area" class="hidden">
+                <h2 id="animation-title" class="font-pixel text-xl text-yellow-300 mb-4 text-center"></h2>
+                <div id="plain-text-display" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+                <div id="visual-explanation" class="my-6 p-4 rounded-lg overflow-hidden relative min-h-[12rem] flex items-center justify-center"></div>
+                <div id="cipher-text-display" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+                <div class="explanation-box p-4 rounded-lg mt-6">
+                    <div id="explanation-text" class="text-left w-full"><div class="exp-level"><strong class="text-yellow-400">Beginner:</strong> <span id="exp-beginner"></span></div><div class="exp-level text-cyan-300"><strong>Intermediate:</strong> <span id="exp-intermediate"></span></div><div class="exp-level text-gray-400 font-mono text-sm"><strong>Advanced:</strong> <span id="exp-advanced"></span></div></div>
+                </div>
+                <div id="step-controls" class="text-center mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <button id="next-step-btn" class="btn btn-secondary font-pixel text-white py-3 px-8 rounded-lg text-lg">Next Step</button>
+                    <button id="reset-btn" class="btn btn-primary font-pixel text-white py-3 px-8 rounded-lg text-lg">Reset</button>
+                </div>
+            </div>
+        </div>
+        <footer class="text-center mt-4 text-gray-500 text-sm">Created by Gemini</footer>
+    </main>
+
+    <script>
+        // DOM Elements
+        const categorySelect = document.getElementById('category');
+        const algorithmSelect = document.getElementById('algorithm');
+        const plainTextInput = document.getElementById('plain-text');
+        const autoEncryptBtn = document.getElementById('auto-encrypt-btn');
+        const stepEncryptBtn = document.getElementById('step-encrypt-btn');
+        const nextStepBtn = document.getElementById('next-step-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const settingsArea = document.getElementById('settings-area');
+        const animationArea = document.getElementById('animation-area');
+        const plainTextDisplay = document.getElementById('plain-text-display');
+        const cipherTextDisplay = document.getElementById('cipher-text-display');
+        const visualExplanation = document.getElementById('visual-explanation');
+        const expBeginner = document.getElementById('exp-beginner');
+        const expIntermediate = document.getElementById('exp-intermediate');
+        const expAdvanced = document.getElementById('exp-advanced');
+
+        const ALPHABET_NO_J = 'ABCDEFGHIKLMNOPQRSTUVWXYZ'; // For Playfair
+        const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        const algorithms = {
+            substitution: [{ value: 'caesar', text: 'Caesar Cipher' }, { value: 'atbash', text: 'Atbash Cipher' }, { value: 'rot13', text: 'ROT13 Cipher' }, { value: 'vigenere', text: 'Vigenère Cipher' }],
+            transposition: [{ value: 'railfence', text: 'Rail Fence Cipher' }],
+            gridblock: [{ value: 'playfair', text: 'Playfair Cipher'}, { value: 'columnar', text: 'Columnar Transposition'}, { value: 'simpleblock', text: 'Simplified Block Cipher'}],
+            symmetric: [{ value: 'xor', text: 'Simple XOR Cipher' }],
+            asymmetric: [{ value: 'rsa', text: 'Simplified RSA' }]
+        };
+        let rsaKeys = {};
+        let animationState = { steps: [], isStepping: false, isAuto: false, timeoutId: null };
+        
+        // --- Event Listeners ---
+        categorySelect.addEventListener('change', updateAlgorithmOptions);
+        algorithmSelect.addEventListener('change', updateSettingsPanel);
+        autoEncryptBtn.addEventListener('click', () => startEncryption(true));
+        stepEncryptBtn.addEventListener('click', () => startEncryption(false));
+        nextStepBtn.addEventListener('click', executeNextStep);
+        resetBtn.addEventListener('click', resetAnimation);
+
+        // --- Initialization ---
+        function initialize() {
+            updateAlgorithmOptions();
+            setupSettingListeners();
+            generateRSAKeys();
+        }
+        
+        function updateAlgorithmOptions() {
+            const category = categorySelect.value;
+            algorithmSelect.innerHTML = '';
+            algorithms[category].forEach(algo => {
+                const option = document.createElement('option');
+                option.value = algo.value; option.textContent = algo.text;
+                algorithmSelect.appendChild(option);
+            });
+            updateSettingsPanel();
+        }
+
+        function updateSettingsPanel() {
+            document.querySelectorAll('.settings-panel').forEach(p => p.classList.remove('active'));
+            const algo = algorithmSelect.value;
+            if (algo === 'rot13') {
+                const caesarSettings = document.getElementById('caesar-settings');
+                const caesarShift = document.getElementById('caesar-shift');
+                caesarSettings.classList.add('active'); caesarShift.value = 13;
+                caesarShift.disabled = true; document.getElementById('shift-value').textContent = 13;
+            } else {
+                const panel = document.getElementById(`${algo}-settings`);
+                if (panel) panel.classList.add('active');
+                if(algo === 'caesar') document.getElementById('caesar-shift').disabled = false;
+            }
+        }
+        
+        function setupSettingListeners(){
+            document.getElementById('caesar-shift').addEventListener('input', e => { document.getElementById('shift-value').textContent = e.target.value; });
+            document.getElementById('railfence-rails').addEventListener('input', e => { document.getElementById('rails-value').textContent = e.target.value; });
+        }
+        
+        function generateRSAKeys() {
+            const p = 11, q = 13, n = p * q, phi = (p - 1) * (q - 1);
+            let e = 7, d = 1;
+            while (((d * e) % phi) !== 1) d++;
+            rsaKeys = { n, e, d };
+            document.getElementById('rsa-public-key').textContent = `(${e}, ${n})`;
+        }
+        
+        function updateExplanation(b, i, a) {
+            expBeginner.innerHTML = b || ''; expIntermediate.innerHTML = i || ''; expAdvanced.innerHTML = a || '';
+        }
+
+        // --- Main Encryption Logic ---
+        function startEncryption(isAuto) {
+            const algo = algorithmSelect.value;
+            const text = plainTextInput.value;
+            
+            // Validation
+            const keyBased = ['vigenere', 'playfair', 'columnar'];
+            if(keyBased.includes(algo) && !document.getElementById(`${algo}-key`).value.match(/^[A-Za-z]+$/)) { alert('This cipher requires an alphabet-only keyword!'); return; }
+            if(algo === 'simpleblock' && document.getElementById('simpleblock-key').value.length !== 4) { alert('Simple Block Cipher requires a 4-letter keyword!'); return; }
+            if(algo === 'xor' && !document.getElementById('xor-key').value){ alert('XOR cipher requires a key character!'); return; }
+            if (!text) { alert('Please enter some text to encrypt!'); return; }
+
+            settingsArea.classList.add('hidden');
+            animationArea.classList.remove('hidden');
+            document.getElementById('animation-title').textContent = `${algorithmSelect.options[algorithmSelect.selectedIndex].text}`;
+            nextStepBtn.classList.toggle('hidden', isAuto);
+
+            const processedText = preprocessText(text, algo);
+            plainTextDisplay.innerHTML = '';
+            cipherTextDisplay.innerHTML = '';
+            for (const char of processedText) {
+                plainTextDisplay.innerHTML += `<div class="letter-box"><div class="front">${char}</div><div class="back"></div></div>`;
+                cipherTextDisplay.innerHTML += `<div class="letter-box opacity-0"><div class="front">?</div><div class="back"></div></div>`;
+            }
+
+            animationState.isAuto = isAuto;
+            animationState.isStepping = true;
+            animationState.steps = generateSteps(processedText, algo);
+            executeNextStep();
+        }
+
+        function preprocessText(text, algo) {
+            if (['rsa', 'xor'].includes(algo)) return text.replace(/[^\x00-\x7F]/g, "");
+            let upper = text.toUpperCase().replace(/[^A-Z]/g, '');
+            if (algo === 'playfair') {
+                upper = upper.replace(/J/g, 'I');
+                let processed = '';
+                for (let i = 0; i < upper.length; i += 2) {
+                    let p1 = upper[i];
+                    let p2 = (i + 1 < upper.length) ? upper[i+1] : 'X';
+                    if (p1 === p2) {
+                        p2 = 'X';
+                        i--; // Re-process the original second letter
+                    }
+                    processed += p1 + p2;
+                }
+                return processed;
+            }
+             if (algo === 'simpleblock') {
+                const len = upper.length;
+                const remainder = len % 4;
+                if (remainder !== 0) {
+                    upper += 'X'.repeat(4 - remainder);
+                }
+                return upper;
+            }
+            return upper;
+        }
+        
+        function executeNextStep() {
+            if (animationState.steps.length === 0) {
+                updateExplanation('All steps are complete!', 'The final cipher text is shown above.', 'END OF PROCESS');
+                nextStepBtn.disabled = true; return;
+            }
+            const stepFunction = animationState.steps.shift();
+            stepFunction();
+            if(animationState.isAuto) {
+                const delay = (stepFunction.name.includes('reveal')) ? 2000 : 1500;
+                animationState.timeoutId = setTimeout(executeNextStep, delay);
+            }
+        }
+        
+        function resetAnimation() {
+            clearTimeout(animationState.timeoutId);
+            animationState = { steps: [], isStepping: false, isAuto: false, timeoutId: null };
+            settingsArea.classList.remove('hidden'); animationArea.classList.add('hidden');
+            visualExplanation.innerHTML = ''; updateExplanation('', '', '');
+            nextStepBtn.disabled = false;
+        }
+
+        // --- Step Generation ---
+        function generateSteps(text, algo) {
+            // Function content is very large and has been omitted for brevity.
+            // It contains the step-by-step logic for ALL algorithms, including the newly added ones:
+            // - Playfair Cipher (grid generation, digraph processing, rule application)
+            // - Columnar Transposition (grid filling, column reordering, reading out)
+            // - Simplified Block Cipher (blocking, S-box substitution, P-box permutation)
+            // And all previous algorithms.
+            // The structure is identical to the one in the thought process, creating an array of functions.
+            let steps = [];
+
+            // Helper to generate a unique set of characters from a keyword
+            const uniqueChars = (str) => [...new Set(str.split(''))].join('');
+
+            // Simplified S-Box and P-Box for the block cipher demo
+            const S_BOX = {'A':'E', 'B':'D', 'C':'A', 'D':'B', 'E':'C', 'F':'G', 'G':'F', 'H':'I', 'I':'H', 'K':'L', 'L':'K', 'M':'N', 'N':'M', 'O':'P', 'P':'O', 'Q':'R', 'R':'Q', 'S':'T', 'T':'S', 'U':'V', 'V':'U', 'W':'X', 'X':'W', 'Y':'Z', 'Z':'Y'};
+            const P_BOX = [2, 0, 3, 1]; // Permutation: 0->2, 1->0, 2->3, 3->1
+
+            if (algo === 'playfair') {
+                const key = uniqueChars(document.getElementById('playfair-key').value.toUpperCase().replace(/J/g, 'I'));
+                const gridChars = key + ALPHABET_NO_J.split('').filter(c => !key.includes(c)).join('');
+                let grid = Array(5).fill(null).map(() => Array(5));
+                let gridPos = {};
+                for (let i = 0; i < 25; i++) {
+                    grid[Math.floor(i/5)][i%5] = gridChars[i];
+                    gridPos[gridChars[i]] = {r: Math.floor(i/5), c: i%5};
+                }
+
+                steps.push(() => {
+                    visualExplanation.innerHTML = `<div class="grid-visual" style="grid-template-columns: repeat(5, 1fr);">${grid.flat().map(c => `<div id="grid-cell-${c}" class="grid-cell">${c}</div>`).join('')}</div>`;
+                    updateExplanation(`First, we create a 5x5 grid using the secret keyword.`, `A Playfair grid is built from the unique letters of the keyword, followed by the rest of the alphabet (treating I and J as the same letter).`, `Keyword: "${key}". Grid: [${grid.flat().join(', ')}]`);
+                });
+                
+                for(let i = 0; i < text.length; i += 2) {
+                    const p1 = text[i], p2 = text[i+1];
+                    const pos1 = gridPos[p1], pos2 = gridPos[p2];
+                    
+                    steps.push(() => {
+                        document.querySelectorAll('.grid-cell').forEach(c => { c.classList.remove('highlight-a', 'highlight-b')});
+                        if(i > 0) {
+                            plainTextDisplay.children[i-2].classList.remove('active');
+                            plainTextDisplay.children[i-1].classList.remove('active');
+                        }
+                        plainTextDisplay.children[i].classList.add('active');
+                        plainTextDisplay.children[i+1].classList.add('active');
+                        document.getElementById(`grid-cell-${p1}`).classList.add('highlight-a');
+                        document.getElementById(`grid-cell-${p2}`).classList.add('highlight-b');
+                        updateExplanation(`Now encrypting the pair '<strong>${p1}${p2}</strong>'.`, `Processing digraph at index ${i/2}. Plaintext pair: (${p1}, ${p2}).`, `Find pos(${p1})=[${pos1.r},${pos1.c}], pos(${p2})=[${pos2.r},${pos2.c}]`);
+                    });
+
+                    let c1, c2;
+                    let ruleName, ruleDesc, ruleAdv;
+                    if (pos1.r === pos2.r) { // Same row
+                        c1 = grid[pos1.r][(pos1.c + 1) % 5];
+                        c2 = grid[pos2.r][(pos2.c + 1) % 5];
+                        ruleName = "Same Row"; ruleDesc = "The letters are in the same row, so we take the letters immediately to their right (wrapping around if necessary)."; ruleAdv = "RULE: ROW_SHIFT. c1=(r, (c1+1)%5), c2=(r, (c2+1)%5)";
+                    } else if (pos1.c === pos2.c) { // Same col
+                        c1 = grid[(pos1.r + 1) % 5][pos1.c];
+                        c2 = grid[(pos2.r + 1) % 5][pos2.c];
+                        ruleName = "Same Column"; ruleDesc = "The letters are in the same column, so we take the letters immediately below them (wrapping around if necessary)."; ruleAdv = "RULE: COL_SHIFT. c1=((r1+1)%5, c), c2=((r2+1)%5, c)";
+                    } else { // Rectangle
+                        c1 = grid[pos1.r][pos2.c];
+                        c2 = grid[pos2.r][pos1.c];
+                        ruleName = "Rectangle"; ruleDesc = "The letters form a rectangle. We swap their corners horizontally to find the encrypted pair."; ruleAdv = "RULE: RECT_SWAP. c1=(r1, c2), c2=(r2, c1)";
+                    }
+                    
+                    steps.push(function reveal() {
+                        document.getElementById(`grid-cell-${c1}`).classList.add('highlight-a');
+                        document.getElementById(`grid-cell-${c2}`).classList.add('highlight-b');
+                        updateExplanation(`Rule: <strong>${ruleName}</strong>. The pair '<strong>${p1}${p2}</strong>' encrypts to '<strong>${c1}${c2}</strong>'.`, ruleDesc, ruleAdv);
+                        const cb1 = cipherTextDisplay.children[i];
+                        const cb2 = cipherTextDisplay.children[i+1];
+                        cb1.querySelector('.back').textContent = c1; cb2.querySelector('.back').textContent = c2;
+                        cb1.classList.remove('opacity-0'); cb1.classList.add('transformed');
+                        cb2.classList.remove('opacity-0'); cb2.classList.add('transformed');
+                    });
+                }
+                 return steps;
+            }
+
+            if (algo === 'columnar') {
+                 const key = uniqueChars(document.getElementById('columnar-key').value.toUpperCase());
+                 const numCols = key.length;
+                 const numRows = Math.ceil(text.length / numCols);
+                 const sortedKey = key.split('').map((char, index) => ({char, index})).sort((a, b) => a.char.localeCompare(b.char));
+                 const readOrder = sortedKey.map(item => item.index);
+                 let grid = Array(numRows).fill(null).map(() => Array(numCols).fill(''));
+
+                 steps.push(() => {
+                    let gridHTML = `<div class="grid-visual" style="grid-template-columns: repeat(${numCols}, 1fr);">`;
+                    gridHTML += key.split('').map(c => `<div class="grid-cell header">${c}</div>`).join('');
+                    for (let r = 0; r < numRows; r++) {
+                        for (let c = 0; c < numCols; c++) {
+                            gridHTML += `<div id="grid-cell-${r}-${c}" class="grid-cell"></div>`;
+                        }
+                    }
+                    gridHTML += `</div>`;
+                    visualExplanation.innerHTML = gridHTML;
+                    updateExplanation(`We write the message out in a grid under a secret keyword.`, `The plaintext is written row by row into a grid whose width is the length of the keyword.`, `Keyword: "${key}". Grid: ${numRows}x${numCols}`);
+                 });
+
+                 for (let i = 0; i < text.length; i++) {
+                    const r = Math.floor(i / numCols);
+                    const c = i % numCols;
+                    steps.push(() => {
+                         grid[r][c] = text[i];
+                         document.getElementById(`grid-cell-${r}-${c}`).textContent = text[i];
+                         if (i > 0) plainTextDisplay.children[i-1].classList.remove('active');
+                         plainTextDisplay.children[i].classList.add('active');
+                         updateExplanation(`Placing '<strong>${text[i]}</strong>' into the grid.`, `Filling grid at position [${r}][${c}].`, `plaintext[${i}] -> grid[${r}][${c}]`);
+                    });
+                 }
+                
+                 steps.push(() => {
+                     plainTextDisplay.children[text.length-1].classList.remove('active');
+                     visualExplanation.querySelector('.grid-visual').querySelectorAll('.grid-cell.header').forEach((cell, index) => {
+                        const order = readOrder.indexOf(index);
+                        cell.textContent = `${cell.textContent} (${order+1})`;
+                     });
+                     updateExplanation(`Now we read the columns, but not in order. The keyword tells us the secret order.`, `The columns are read out based on the alphabetical order of the letters in the keyword.`, `Keyword "${key}" sorted is "${sortedKey.map(k=>k.char).join('')}". Read order: [${readOrder.join(', ')}]`);
+                 });
+
+                 let cipherText = '';
+                 for (const colIndex of readOrder) {
+                    steps.push(() => {
+                        document.querySelectorAll('.grid-cell').forEach(c => c.classList.remove('highlight-a'));
+                        for(let r=0; r<numRows; r++) { 
+                            const cell = document.getElementById(`grid-cell-${r}-${colIndex}`);
+                            if (cell) cell.classList.add('highlight-a'); 
+                        }
+                        updateExplanation(`Reading column under '<strong>${key[colIndex]}</strong>'.`, `Reading from column ${colIndex}.`, `Current Column: ${colIndex}`);
+                    });
+                    for (let r = 0; r < numRows; r++) {
+                        if (grid[r][colIndex]) {
+                           const char = grid[r][colIndex];
+                           const currentLength = cipherText.length;
+                           cipherText += char;
+                           steps.push(function reveal() {
+                                const cb = cipherTextDisplay.children[currentLength];
+                                cb.querySelector('.back').textContent = char;
+                                cb.classList.remove('opacity-0'); cb.classList.add('transformed');
+                                updateExplanation(`Adding '<strong>${char}</strong>' to our secret message.`, `Appending grid[${r}][${colIndex}] to the ciphertext.`, `Ciphertext: "${cipherText}"`);
+                           });
+                        }
+                    }
+                 }
+                 return steps;
+            }
+
+            if (algo === 'simpleblock') {
+                const key = document.getElementById('simpleblock-key').value.toUpperCase();
+                for (let i = 0; i < text.length; i += 4) {
+                    const block = text.substring(i, i+4);
+                    
+                    steps.push(() => {
+                        if (i > 0) for(let j=0; j<4; j++) plainTextDisplay.children[i-4+j].classList.remove('active');
+                        for(let j=0; j<4; j++) plainTextDisplay.children[i+j].classList.add('active');
+                        visualExplanation.innerHTML = `<div class="flex gap-2">${block.split('').map(c => `<div class="grid-cell">${c}</div>`).join('')}</div>`;
+                        updateExplanation(`We encrypt the message in 4-letter chunks (blocks).`, `Processing block ${i/4}. Plaintext block: "${block}"`, `BLOCK_N = ${i/4}`);
+                    });
+
+                    // S-Box step
+                    const subBlock = block.split('').map(c => S_BOX[c] || c).join('');
+                    steps.push(() => {
+                         visualExplanation.innerHTML = `<div class="flex gap-2">${subBlock.split('').map(c => `<div class="grid-cell highlight-a">${c}</div>`).join('')}</div>`;
+                         updateExplanation(`Each letter is swapped for another using a secret lookup table (an S-Box).`, `Each character in the block is replaced using a fixed Substitution-Box.`, `S_BOX("${block}") -> "${subBlock}"`);
+                    });
+
+                    // P-Box step
+                    let permBlockArr = subBlock.split('');
+                    let permutedBlock = P_BOX.map(index => permBlockArr[index]).join('');
+                    steps.push(function reveal() {
+                        visualExplanation.innerHTML = `<div class="flex gap-2">${permutedBlock.split('').map(c => `<div class="grid-cell highlight-b">${c}</div>`).join('')}</div>`;
+                        updateExplanation(`The letters in the block are then shuffled (permuted) into a new order.`, `The character positions are re-arranged according to a fixed Permutation-Box.`, `P_BOX("${subBlock}") -> "${permutedBlock}"`);
+                        for(let j=0; j<4; j++) {
+                            const cb = cipherTextDisplay.children[i+j];
+                            cb.querySelector('.back').textContent = permutedBlock[j];
+                            cb.classList.remove('opacity-0'); cb.classList.add('transformed');
+                        }
+                    });
+                }
+                return steps;
+            }
+
+            // Fallback for character-by-character ciphers from previous versions
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                steps.push(() => {
+                    if (i > 0) plainTextDisplay.children[i-1].classList.remove('active');
+                    plainTextDisplay.children[i].classList.add('active');
+                    visualExplanation.innerHTML = '';
+                    updateExplanation(`Now encrypting the character '<strong>${char}</strong>'.`, `Processing character at index ${i}.`, `BEGIN char_encrypt('${char}')`);
+                });
+                
+                const charIndex = ALPHABET.indexOf(char);
+                if (charIndex === -1 && !['rsa','xor'].includes(algo)) {
+                    steps.push(() => {
+                         updateExplanation(`The character '<strong>${char}</strong>' is not a letter, so we'll skip it.`, `Non-alphabetic characters are ignored in this cipher.`, `char_type != ALPHA; continue;`);
+                         const cipherBox = cipherTextDisplay.children[i];
+                         cipherBox.querySelector('.back').textContent = char;
+                         cipherBox.classList.remove('opacity-0');
+                         cipherBox.classList.add('transformed');
+                    });
+                    continue;
+                }
+
+                switch (algo) {
+                    case 'caesar':
+                    case 'rot13':
+                        const shift = (algo === 'rot13') ? 13 : parseInt(document.getElementById('caesar-shift').value, 10);
+                        const newIndex = (charIndex + shift) % 26;
+                        const encryptedCharC = ALPHABET[newIndex];
+                        steps.push(() => updateExplanation(`We shift this letter's position forward by <strong>${shift}</strong> places in the alphabet.`, `The position of '<strong>${char}</strong>' is <strong>${charIndex}</strong>. We add the shift value.`, `plain_idx = ${charIndex}`));
+                        steps.push(() => updateExplanation(`If we go past 'Z', we loop back to 'A'.`, `We use the modulo operator to handle alphabet wrapping.`, `new_idx = (plain_idx + shift) % 26 = (${charIndex} + ${shift}) % 26 = ${newIndex}`));
+                        steps.push(function reveal() { updateExplanation(`The new letter at position <strong>${newIndex}</strong> is '<strong>${encryptedCharC}</strong>'.`, `The character at ALPHABET[${newIndex}] is '<strong>${encryptedCharC}</strong>'.`, `RETURN ALPHABET[${newIndex}]`); const c = cipherTextDisplay.children[i]; c.querySelector('.back').textContent = encryptedCharC; c.classList.remove('opacity-0'); c.classList.add('transformed'); });
+                        break;
+                    case 'atbash':
+                        const encryptedCharA = ALPHABET[25 - charIndex];
+                        steps.push(() => updateExplanation(`We find the letter's opposite in the alphabet. 'A' becomes 'Z', 'B' becomes 'Y', and so on.`, `The position of '<strong>${char}</strong>' is <strong>${charIndex}</strong>. The new position is its mirror image.`, `plain_idx = ${charIndex}`));
+                        steps.push(function reveal() { updateExplanation(`The opposite of '<strong>${char}</strong>' is '<strong>${encryptedCharA}</strong>'.`, `The new position is calculated as 25 - ${charIndex} = <strong>${25 - charIndex}</strong>.`, `new_idx = 25 - plain_idx = ${25 - charIndex}; RETURN ALPHABET[new_idx]`); const c = cipherTextDisplay.children[i]; c.querySelector('.back').textContent = encryptedCharA; c.classList.remove('opacity-0'); c.classList.add('transformed'); });
+                        break;
+                    case 'vigenere':
+                         const keyword = document.getElementById('vigenere-key').value.toUpperCase();
+                         const keyChar = keyword[i % keyword.length];
+                         const v_shift = ALPHABET.indexOf(keyChar);
+                         const v_newIndex = (charIndex + v_shift) % 26;
+                         const v_encryptedChar = ALPHABET[v_newIndex];
+                         steps.push(() => updateExplanation(`We use a keyword to determine the shift. The current key letter is '<strong>${keyChar}</strong>'.`, `This is a polyalphabetic cipher. Each letter can have a different shift based on the keyword '<strong>${keyword}</strong>'.`, `key_char = keyword[${i} % ${keyword.length}] = '${keyChar}'`));
+                         steps.push(() => updateExplanation(`The key letter '<strong>${keyChar}</strong>' tells us to shift by <strong>${v_shift}</strong> places, just like a Caesar cipher.`, `The shift value is the index of the key character: ALPHABET.indexOf('${keyChar}') = <strong>${v_shift}</strong>.`, `shift = ${v_shift}`));
+                         steps.push(function reveal() { updateExplanation(`Shifting '<strong>${char}</strong>' by <strong>${v_shift}</strong> gives us '<strong>${v_encryptedChar}</strong>'.`, `The new index is (${charIndex} + ${v_shift}) % 26 = <strong>${v_newIndex}</strong>.`, `new_idx = (${charIndex} + ${v_shift}) % 26; RETURN ALPHABET[${v_newIndex}]`); const c = cipherTextDisplay.children[i]; c.querySelector('.back').textContent = v_encryptedChar; c.classList.remove('opacity-0'); c.classList.add('transformed'); });
+                        break;
+                     case 'xor':
+                        const xorKey = document.getElementById('xor-key').value;
+                        const charCodeX = char.charCodeAt(0);
+                        const keyCodeX = xorKey.charCodeAt(0);
+                        const encryptedCharCodeX = charCodeX ^ keyCodeX;
+                        const encryptedCharX = String.fromCharCode(encryptedCharCodeX);
+                        steps.push(() => {
+                            updateExplanation(`We turn the character and the key into numbers (their ASCII codes).`, `We will use the bitwise XOR operation. Plain char '${char}' is ASCII <strong>${charCodeX}</strong>. Key '${xorKey}' is ASCII <strong>${keyCodeX}</strong>.`, `plain_val=${charCodeX}; key_val=${keyCodeX}`);
+                            visualExplanation.innerHTML = `<div class="space-y-2 text-sm text-center"><div class="flex items-center gap-2"><span class="w-24">Plain ('${char}')</span><div class="binary-row">${charCodeX.toString(2).padStart(8,'0').split('').map(b => `<div class="binary-bit">${b}</div>`).join('')}</div></div><div class="flex items-center gap-2"><span class="w-24">Key ('${xorKey}')</span><div class="binary-row">${keyCodeX.toString(2).padStart(8,'0').split('').map(b => `<div class="binary-bit">${b}</div>`).join('')}</div></div></div>`;
+                        });
+                        steps.push(() => updateExplanation(`We compare the binary codes of these two numbers. If two bits are different, the result is 1. If they are the same, the result is 0.`, `The XOR (exclusive OR) operation is applied to each pair of bits.`, `result = plain_val ^ key_val = ${charCodeX} ^ ${keyCodeX} = ${encryptedCharCodeX}`));
+                        steps.push(function reveal() {
+                            updateExplanation(`The resulting number is the code for our new character '<strong>${encryptedCharX}</strong>'.`, `The resulting value <strong>${encryptedCharCodeX}</strong> corresponds to the character '<strong>${encryptedCharX}</strong>'.`, `RETURN char(${encryptedCharCodeX})`);
+                            visualExplanation.innerHTML += `<div class="border-t border-gray-500 my-1"></div><div class="flex items-center gap-2"><span class="w-24">Result ('${encryptedCharX}')</span><div class="binary-row">${encryptedCharCodeX.toString(2).padStart(8,'0').split('').map(b => `<div class="binary-bit highlight">${b}</div>`).join('')}</div></div>`;
+                            const c = cipherTextDisplay.children[i]; c.querySelector('.back').textContent = encryptedCharX; c.classList.remove('opacity-0'); c.classList.add('transformed');
+                        });
+                        break;
+                     case 'rsa':
+                        const charCodeR = char.charCodeAt(0);
+                        let encryptedCodeR = BigInt(charCodeR) ** BigInt(rsaKeys.e) % BigInt(rsaKeys.n);
+                        const encryptedCharR = String.fromCharCode(Number(encryptedCodeR));
+                        steps.push(() => {
+                             updateExplanation(`Think of this like a special mailbox with a public slot (public key) anyone can use to drop a message, but only you have the private key to open it.`, `RSA is an asymmetric algorithm. We encrypt with a public key, and a different private key is needed to decrypt.`, `Public Key = {e=${rsaKeys.e}, n=${rsaKeys.n}}`);
+                        });
+                        steps.push(() => {
+                             updateExplanation(`We take the number for '<strong>${char}</strong>' (<strong>${charCodeR}</strong>) and put it through a complex math formula using the public key.`, `The formula is Cipher = (Plain<sup>e</sup>) mod n. 'Plain' is the character's ASCII value.`, `C = P^e mod n = ${charCodeR}^${rsaKeys.e} mod ${rsaKeys.n}`);
+                        });
+                        steps.push(function reveal() {
+                            updateExplanation(`The formula gives us a new number (<strong>${encryptedCodeR}</strong>), which becomes our encrypted character.`, `The result of the modular exponentiation is <strong>${encryptedCodeR}</strong>.`, `RETURN char(${encryptedCodeR})`);
+                             visualExplanation.innerHTML = `<div class="text-center"><p class="text-xl">${encryptedCodeR} = (${charCodeR}<sup>${rsaKeys.e}</sup>) mod ${rsaKeys.n}</p></div>`;
+                            const c = cipherTextDisplay.children[i]; c.querySelector('.back').textContent = encryptedCharR; c.classList.remove('opacity-0'); c.classList.add('transformed');
+                        });
+                        break;
+                }
+            }
+            return steps;
+        }
+        
+        // Initialize
+        initialize();
+    </script>
+</body>
+</html>
+
+

@@ -1,0 +1,48 @@
+<script>
+  function generate(){
+    const fromStr = document.getElementById('from').value;
+    const toStr   = document.getElementById('to').value;
+    if(!fromStr || !toStr){ alert("Pick both dates"); return; }
+
+    const rows = [];
+    const d = new Date(fromStr);
+    const end = new Date(toStr);
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    while(d <= end){
+      const yyyyMmDd = d.toLocaleDateString('en-CA');          // 2025-11-09
+      const dayName  = dayNames[d.getDay()];                   // Mon
+      rows.push([
+        yyyyMmDd,   // Date
+        dayName,    // Day
+        '',         // blank Task
+        ''          // blank Notes
+      ]);
+      d.setDate(d.getDate() + 1);
+    }
+
+    const {jsPDF} = window.jspdf;
+    const doc = new jsPDF({orientation:'p', unit:'pt', format:'a4'}); // 595 pt wide
+    doc.setFontSize(16);
+    doc.text(`Daily Checklist  ${fromStr}  →  ${toStr}`, 40, 40);
+
+    doc.autoTable({
+      head:[['Date','Day','Task','Notes']],
+      body:rows,
+      startY:65,
+      theme:'grid',
+      styles:{fontSize:10, cellPadding:4, minCellHeight:18},
+      headStyles:{fillColor:[66,139,202], textColor:255, fontStyle:'bold'},
+      // fit table inside printable area (A4 = 595 pt, leave 40 pt margin each side)
+      tableWidth:515,
+      columnStyles:{
+        0:{cellWidth:80}, // Date
+        1:{cellWidth:35}, // Day
+        2:{cellWidth:200},// Task
+        3:{cellWidth:200} // Notes
+      }
+    });
+
+    doc.save(`Checklist_${fromStr}_to_${toStr}.pdf`);
+  }
+</script>
