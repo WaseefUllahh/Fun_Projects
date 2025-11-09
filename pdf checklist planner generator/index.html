@@ -1,75 +1,270 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>PDF Checklist Generator</title>
+  <meta charset="UTF-8">
+  <title>Printable Checklist Generator</title>
   <style>
-    body { font-family: system-ui, sans-serif; background:#f6f8fa; display:flex; justify-content:center; align-items:center; height:100vh; }
-    .card { background:#fff; padding:32px 40px; border-radius:12px; box-shadow:0 4px 18px rgba(0,0,0,.12); width:320px; }
-    h2 { margin-top:0; }
-    label { display:block; margin:16px 0 4px; font-weight:600; }
-    input[type=date] { width:100%; padding:8px; font-size:15px; }
-    button { margin-top:24px; width:100%; padding:10px; font-size:16px; cursor:pointer; }
-    .note { font-size:13px; color:#555; margin-top:8px; }
+    /* ---- page layout ---- */
+    body{
+      font-family: system-ui, sans-serif;
+      background: #f6f8fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    /* ---- white card in the centre ---- */
+    .card{
+      background: #fff;
+      padding: 32px 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, .12);
+      width: 340px;
+    }
+    h2{margin-top: 0;}
+    label{
+      display: block;
+      margin: 16px 0 4px;
+      font-weight: 600;
+    }
+    input[type=date]{
+      width: 100%;
+      padding: 8px;
+      font-size: 15px;
+    }
+    /* ---- radio buttons ---- */
+    .radio-group{
+      margin: 18px 0;
+      font-size: 15px;
+    }
+    .radio-group label{
+      display: inline;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+    /* ---- big action button ---- */
+    button{
+      margin-top: 12px;
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    /* ---- small helper text ---- */
+    .note{
+      font-size: 13px;
+      color: #555;
+      margin-top: 8px;
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <h2>PDF Checklist</h2>
-    <label>From
-      <input id="from" type="date">
-    </label>
-    <label>To
-      <input id="to" type="date">
-    </label>
-    <button onclick="generate()">Generate PDF</button>
-    <div class="note">No server required—runs entirely in your browser.</div>
+    <h2>Printable Checklist</h2>
+
+    <label>Start Date <input id="from" type="date"></label>
+    <label>End Date   <input id="to"   type="date"></label>
+
+    <div class="radio-group">
+      <label><input type="radio" name="tpl" value="daily" checked> Daily List</label><br>
+      <label><input type="radio" name="tpl" value="weekly"> Weekly Vertical</label>
+    </div>
+
+    <button onclick="generatePDF()">Create PDF</button>
+    <div class="note">Generates print-ready PDF instantly.</div>
   </div>
 
-  <!-- jsPDF + autoTable CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
   <script>
-    // --- 1. tiny fake task list (replace or extend here) ---
-    const tasks = [
-      {title:"Send invoice",      due:"2025-11-10", notes:"ABC Corp"},
-      {title:"Code review",       due:"2025-11-11", notes:"PR #42"},
-      {title:"Book flight",       due:"2025-11-12", notes:"NY→SF"},
-      {title:"Submit taxes",      due:"2025-11-13", notes:""},
-      {title:"Team stand-up",     due:"2025-11-14", notes:"10 am"},
-      {title:"Update portfolio",  due:"2025-11-15", notes:"Dribbble shots"},
-      {title:"Buy groceries",     due:"2025-11-16", notes:"Milk, eggs"},
-    ];
+    /* ======================
+       HELPER: build array of Date objects between start & end (inclusive)
+       ====================== */
+    const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-    // --- 2. PDF generator ---
-    function generate(){
-      const from = document.getElementById('from').value;
-      const to   = document.getElementById('to').value;
-      if(!from || !to){ alert("Pick both dates"); return; }
-
-      // filter tasks in range (inclusive)
-      const filtered = tasks.filter(t => t.due >= from && t.due <= to);
-
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({orientation:'p', unit:'pt', format:'a4'});
-      doc.setFontSize(18);
-      doc.text(`Checklist  ${from}  →  ${to}`, 40, 50);
-
-      const head = [['☐ Task', 'Due Date', 'Notes']];
-      const body = filtered.map(t => [t.title, t.due, t.notes]);
-
-      doc.autoTable({
-        head,
-        body,
-        startY: 80,
-        theme: 'grid',
-        styles:{fontSize:11},
-        headStyles:{fillColor:[66,139,202]}
-      });
-
-      doc.save(`Checklist_${from}_to_${to}.pdf`);
+    function dateRange(start, end) {
+      const arr = [], d = new Date(start);
+      while (d <= new Date(end)) {
+        arr.push(new Date(d));
+        d.setDate(d.getDate() + 1);
+      }
+      return arr;
     }
+
+    /* ==========================================================
+       TEMPLATE 1: Daily List (SMART FIX APPLIED)
+       This now uses the same logic as your weekly template.
+       It calculates page height and creates tall, useful rows.
+       ========================================================== */
+    function dailyList(doc, fromStr, toStr, dates) {
+      
+      // Build all rows first
+      const allRows = dates.map(d => [
+        d.toLocaleDateString('en-CA'), // yyyy-mm-dd
+        dayNames[d.getDay()],          // Mon/Tue ...
+        '',                            // blank task
+        ''                             // blank notes
+      ]);
+
+      const total   = dates.length;
+      // Set max rows per page. Fewer rows = Taller, more useful rows.
+      const perPage = 12; 
+      let page      = 1;
+
+      // process in chunks (perPage at a time)
+      for (let i = 0; i < total; i += perPage) {
+        const chunk = allRows.slice(i, i + perPage);
+        const numRowsOnPage = chunk.length;
+
+        /* ---- page header ---- */
+        doc.setFontSize(20);
+        const title = `Daily List  ${fromStr}  to  ${toStr}  (page ${page})`;
+        doc.text(title, 40, 40);
+        const headerHeight = 65; // The startY of the table
+
+        /* ---- usable page geometry (THE SMART FIX) ---- */
+        const pageH  = doc.internal.pageSize.height; // 842 pt for A4
+        const margin = 40; // 40 pt bottom margin
+        const availH = pageH - headerHeight - margin; // The total height our table can use
+        
+        // Calculate the height *each* cell must have to fill the page
+        const totalRowsOnPage = numRowsOnPage + 1; // +1 for the header row
+        const cellH  = availH / totalRowsOnPage;
+
+        /* ---- draw the table ---- */
+        doc.autoTable({
+          head: [['Date', 'Day', 'Task', 'Notes']],
+          body: chunk, // Only the rows for *this* page
+          startY: headerHeight,
+          theme: 'grid',
+          styles: {
+            fontSize: 14,
+            cellPadding: 10,
+            // THIS IS THE FIX:
+            // Force cell height to fill the page, making it useful.
+            minCellHeight: cellH 
+          },
+          headStyles: {
+            fillColor: [66, 139, 202],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          tableWidth: 560, // A4 page is ~595 wide
+          columnStyles: {
+            // Updated widths to match tableWidth (80+60+210+210 = 560)
+            0: { cellWidth: 80 },
+            1: { cellWidth: 60 },
+            2: { cellWidth: 210 },
+            3: { cellWidth: 210 }
+          }
+        });
+        
+        /* ---- new page if more items left ---- */
+        if (i + perPage < total) doc.addPage();
+        page++;
+      }
+    }
+
+
+    /* ======================
+       TEMPLATE 2: Weekly Vertical (Your "Smart" Code)
+       ====================== */
+    function weeklyVertical(doc, fromStr, toStr, dates) {
+      const total   = dates.length;
+      const perPage = 7; // max 7 days on A4 portrait
+      let page      = 1;
+
+      // process chunk-of-7-days at a time
+      for (let i = 0; i < total; i += perPage) {
+        const chunk = dates.slice(i, i + perPage);
+        // This is the number of writing rows *per column*
+        const rows  = 10; 
+
+        /* ---- page header ---- */
+        doc.setFontSize(16);
+        const headerTxt = `Weekly Vertical  ${fromStr}  to  ${toStr}  (page ${page})`;
+        doc.text(headerTxt, 40, 30);
+        const headerHeight = 40; // space consumed by title
+
+        /* ---- usable page geometry ---- */
+        const pageH  = doc.internal.pageSize.height; // 842 pt for A4
+        const margin = 50; // keep 50 pt bottom margin
+        const availH = pageH - headerHeight - margin;
+        const totalRows = rows + 1; // +1 for the header row
+        const cellH  = availH / totalRows;// exact height each cell must have
+
+        /* ---- build table head & body ---- */
+        const head = [[]]; // 1 row of headers
+        const body = Array.from({ length: rows }, () => []); // empty rows
+
+        chunk.forEach(d => {
+          // header label: "Mon, 11/10"
+          const label = `${dayNames[d.getDay()]}, ${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getDate().toString().padStart(2, '0')}`;
+          head[0].push(label);
+          // push empty cell into every writing row for this day
+          body.forEach(r => r.push(''));
+        });
+
+        /* ---- draw the table ---- */
+        doc.autoTable({
+          head,
+          body,
+          startY: headerHeight,
+          theme: 'grid',
+          styles: {
+            fontSize: 11,
+            cellPadding: 4,
+            minCellHeight: cellH // <-- forces full-page height
+          },
+          headStyles: {
+            fillColor: [66, 139, 202],
+            textColor: 255,
+            fontStyle: 'bold'
+          },
+          tableWidth: 515,
+          columnStyles: {} // even split across columns
+        });
+
+        /* ---- new page if more weeks left ---- */
+        if (i + perPage < total) doc.addPage();
+        page++;
+      }
+    }
+
+    /* ======================
+       MAIN TRIGGER: decide which template to print
+       ====================== */
+    /* ======================
+   MAIN TRIGGER: (The Correct Version)
+   ====================== */
+function generatePDF() {
+  // 1. Get user inputs
+  const fromStr = document.getElementById('from').value;
+  const toStr   = document.getElementById('to').value;
+  if (!fromStr || !toStr) {
+    alert('Pick both dates');
+    return;
+  }
+
+  // 2. Get dates and template choice
+  const dates = dateRange(fromStr, toStr);
+  const tpl   = document.querySelector('input[name="tpl"]:checked').value;
+
+  // 3. Create the PDF document
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'p', unit: 'pt', format: 'a4' });
+
+  // 4. CHOOSE ONE TEMPLATE (This is the fix)
+  // This line runs *either* dailyList *or* weeklyVertical,
+  // never both.
+  tpl === 'daily' ? dailyList(doc, fromStr, toStr, dates)
+                  : weeklyVertical(doc, fromStr, toStr, dates);
+
+  // 5. Save the file
+  doc.save(`Checklist_${fromStr}_to_${toStr}.pdf`);
+}
   </script>
 </body>
 </html>
