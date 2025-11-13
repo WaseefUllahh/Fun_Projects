@@ -1,0 +1,13 @@
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\bin\Debug\DropshippingDashboard.exe.config
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\bin\Debug\DropshippingDashboard.exe
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\bin\Debug\DropshippingDashboard.pdb
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.csproj.AssemblyReference.cache
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.MainDashboardForm.resources
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.Properties.Resources.resources
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.csproj.GenerateResource.cache
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.csproj.CoreCompileInputs.cache
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.exe
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.pdb
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.exe.config
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.ProductForm.resources
+C:\Users\PMLS\OneDrive\Desktop\5th Semester\Fun_Projects\DropshippingDashboard\DropshippingDashboard\obj\Debug\DropshippingDashboard.OrderForm.resources
