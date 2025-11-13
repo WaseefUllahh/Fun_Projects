@@ -21,8 +21,23 @@ namespace DropshippingDashboard
 
           private void btnSave_Click(object sender, EventArgs e)
           {
-               // 1. Check if we are in "Add Mode"
-               if (CurrentProduct == null)
+               if (string.IsNullOrWhiteSpace(txtName.Text))
+               {
+                    MessageBox.Show("Product Name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtName.Focus(); // Put the cursor in the box
+                    return; // Stop the save
+               }
+
+               if (numTargetSalePrice.Value <= 0)
+               {
+                    MessageBox.Show("Target Sale Price must be greater than 0.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    numTargetSalePrice.Focus();
+                    return; // Stop the save
+               }
+               // --- VALIDATION END ---
+
+                    // 1. Check if we are in "Add Mode"
+                    if (CurrentProduct == null)
                {
                     // If so, create a new product object
                     CurrentProduct = new Product();

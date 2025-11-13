@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Linq; // <-- ADD THIS LINE
 
 namespace DropshippingDashboard
 {
@@ -33,11 +34,18 @@ namespace DropshippingDashboard
           }
           private void RefreshProductGrid()
           {
-               dgvProducts.DataSource = null; // Unbind the data
-               dgvProducts.DataSource = productList; // Re-bind the list
-
-               // Optional: Make it look a bit better
-               dgvProducts.Columns["SupplierURL"].Visible = false; // Hide this column, it's too long
+               // This method now binds the *entire* list and formats it
+               dgvProducts.DataSource = null;
+               dgvProducts.DataSource = productList;
+               FormatProductGrid();
+          }
+          private void FormatProductGrid()
+          {
+               // This helper method just applies formatting
+               if (dgvProducts.Columns["SupplierURL"] != null)
+               {
+                    dgvProducts.Columns["SupplierURL"].Visible = false;
+               }
                dgvProducts.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
           }
 
@@ -60,6 +68,7 @@ namespace DropshippingDashboard
 
                     // 4. Refresh the grid
                     RefreshProductGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -91,6 +100,7 @@ namespace DropshippingDashboard
 
                     // 6. Refresh the grid
                     RefreshProductGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -123,6 +133,7 @@ namespace DropshippingDashboard
 
                     // 7. Refresh the grid to show the changes
                     RefreshProductGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -145,6 +156,7 @@ namespace DropshippingDashboard
 
                     // 4. Refresh the grid
                     RefreshOrderGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -170,6 +182,7 @@ namespace DropshippingDashboard
 
                     // 2. Refresh the grid
                     RefreshOrderGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -199,6 +212,7 @@ namespace DropshippingDashboard
 
                     // 3. Refresh the grid
                     RefreshOrderGrid();
+                    UpdateDashboard();
                }
           }
 
@@ -238,6 +252,7 @@ namespace DropshippingDashboard
                     // 3. Refresh and switch tabs
                     RefreshOrderGrid();
                     tabControl1.SelectedTab = tabOrders;
+                    UpdateDashboard();
                }
           }
 
@@ -250,6 +265,92 @@ namespace DropshippingDashboard
                // Refresh grids to show the loaded data
                RefreshProductGrid();
                RefreshOrderGrid();
+               UpdateDashboard();
+          }
+          private void UpdateDashboard()
+          {
+               // Calculate total actual profit from the order list
+               decimal actualProfit = 0;
+               foreach (Order order in orderList)
+               {
+                    actualProfit += order.ActualProfit;
+               }
+
+               // Calculate total potential profit from the product list
+               decimal potentialProfit = 0;
+               foreach (Product product in productList)
+               {
+                    potentialProfit += product.PotentialProfit;
+               }
+
+               // Update the labels
+               // "C" is the standard format string for currency
+               lblTotalActualProfit.Text = $"Total Actual Profit: {actualProfit:C}";
+               lblTotalPotentialProfit.Text = $"Total Potential Profit: {potentialProfit:C}";
+          }
+
+          private void dgvProducts_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+          {
+               // List of column names to format as currency
+               List<string> currencyColumns = new List<string> {
+        "SupplierPrice", "ShippingCost", "TotalCost", "TargetSalePrice", "PotentialProfit"
+    };
+
+               // Get the column name
+               string colName = dgvProducts.Columns[e.ColumnIndex].Name;
+
+               if (currencyColumns.Contains(colName))
+               {
+                    // Format the cell as currency (e.g., "$12.34")
+                    if (e.Value != null)
+                    {
+                         e.Value = $"{e.Value:C}";
+                         e.FormattingApplied = true;
+                    }
+               }
+          }
+
+          private void dgvOrders_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+          {
+               List<string> currencyColumns = new List<string> {
+        "SalePrice", "TotalCost", "ActualProfit"
+    };
+
+               string colName = dgvOrders.Columns[e.ColumnIndex].Name;
+
+               if (currencyColumns.Contains(colName))
+               {
+                    if (e.Value != null)
+                    {
+                         e.Value = $"{e.Value:C}";
+                         e.FormattingApplied = true;
+                    }
+               }
+          }
+
+          private void txtSearchProducts_TextChanged(object sender, EventArgs e)
+          {
+               // 1. Get the search text, remove spaces, and make it lowercase
+               string searchText = txtSearchProducts.Text.Trim().ToLower();
+
+               if (string.IsNullOrWhiteSpace(searchText))
+               {
+                    // 2. If the search box is empty, show the full list
+                    RefreshProductGrid();
+               }
+               else
+               {
+                    // 3. If search box has text, filter the list
+                    //    This uses LINQ to find all products where the name contains the search text
+                    var filteredList = productList.Where(product =>
+                        product.ProductName.ToLower().Contains(searchText)
+                    ).ToList();
+
+                    // 4. Bind the *filtered* list to the grid
+                    dgvProducts.DataSource = null;
+                    dgvProducts.DataSource = filteredList;
+                    FormatProductGrid(); // Apply the same formatting
+               }
           }
      }
 }

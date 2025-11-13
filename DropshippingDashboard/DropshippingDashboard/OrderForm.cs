@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml.Linq;
 
 namespace DropshippingDashboard
 {
@@ -70,8 +71,25 @@ namespace DropshippingDashboard
 
           private void btnSave_Click(object sender, EventArgs e)
           {
-               // 1. Check if we are in "Add Mode"
-               if (CurrentOrder == null)
+               // --- VALIDATION START ---
+               if (string.IsNullOrWhiteSpace(txtItemName.Text))
+               {
+                    MessageBox.Show("Item Name cannot be empty.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    txtItemName.Focus(); // Put the cursor in the box
+                    return; // Stop the save
+               }
+
+               // This is the check you asked about
+               if (numSalePrice.Value <= 0)
+               {
+                    MessageBox.Show("Sale Price must be greater than 0.", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    numSalePrice.Focus();
+                    return; // Stop the save
+               }
+               // --- VALIDATION END ---
+
+                    // 1. Check if we are in "Add Mode"
+                    if (CurrentOrder == null)
                {
                     CurrentOrder = new Order();
                }
