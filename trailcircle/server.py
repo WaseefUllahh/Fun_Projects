@@ -65,7 +65,7 @@ class Handler(BaseHTTPRequestHandler):
  def sendfile(self,path,ctype):
   try:data=path.read_bytes()
   except OSError:return self.error('Not found',404)
-  self.send_response(200);self.send_header('Content-Type',ctype);self.send_header('Content-Length',str(len(data)));self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','public, max-age=3600' if path.suffix!='html' else 'no-store');self.end_headers();self.wfile.write(data)
+  self.send_response(200);self.send_header('Content-Type',ctype);self.send_header('Content-Length',str(len(data)));self.send_header('X-Content-Type-Options','nosniff');self.send_header('Cache-Control','no-store' if path.suffix in ('.html','.js','.css','.json') else 'public, max-age=3600');self.end_headers();self.wfile.write(data)
  def do_GET(self):
   p=urllib.parse.urlsplit(self.path);q=urllib.parse.parse_qs(p.query);path=p.path
   if not path.startswith('/api/'):
