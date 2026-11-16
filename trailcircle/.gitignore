@@ -1,0 +1,17 @@
+# Local accounts, sessions, and posts (never commit)
+trailcircle.db
+trailcircle.db-*
+*.db
+*.db-wal
+*.db-shm
+uploads/*
+!uploads/.gitkeep
+# Secrets and caches
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
+.venv/
+.termsync.pid
+.DS_Store
